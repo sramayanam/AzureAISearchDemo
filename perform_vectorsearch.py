@@ -38,7 +38,7 @@ def search_vector(query: str,searchfield: str,selectfields:list,index_name:str) 
         search_text=query,  
         vector_queries= [vector_query],
         select=selectfields,
-        filter="category eq 'Analytics'",
+#        filter="category eq 'Analytics'",
         query_type=QueryType.SEMANTIC, semantic_configuration_name='demo-semantic-config', query_caption=QueryCaptionType.EXTRACTIVE, query_answer=QueryAnswerType.EXTRACTIVE,
         top=3
     )  
@@ -47,7 +47,7 @@ def search_vector(query: str,searchfield: str,selectfields:list,index_name:str) 
 def main() -> None:  
     load_dotenv()  
 
-    query="what is more comprehensive data tool?"
+    query="How can I host my website?"
     results = search_vector(query,"contentVector,titleVector",["title", "content", "category"],"demo-index")
 
 

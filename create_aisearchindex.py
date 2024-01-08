@@ -47,7 +47,7 @@ from azure.search.documents.indexes.models import (
 )  
   
   
-# Configure environment variables  
+ 
 load_dotenv()  
 service_endpoint = os.getenv("AZURE_AISEARCH_URL") 
 key = os.getenv("AZURE_AISEARCH_API_KEY") 

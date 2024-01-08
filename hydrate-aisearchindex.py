@@ -8,7 +8,7 @@ from azure.core.credentials import AzureKeyCredential
 from azure.search.documents import SearchIndexingBufferedSender  
 
 def load_sample_data():
-    with open('./text-sample.json', 'r', encoding='utf-8') as file:
+    with open('./sample.json', 'r', encoding='utf-8') as file:
         return json.load(file)
 
 @retry(wait=wait_random_exponential(min=1, max=20), stop=stop_after_attempt(2))
@@ -21,7 +21,6 @@ def generate_embeddings(text):
     model: str = "text-embedding-ada-002" 
     return client.embeddings.create(input = [text], model=model).data[0].embedding
 
-# Generate embeddings for title and content fields
 def createvectors(input_data):
     for item in input_data:
         title = item['title']
@@ -46,14 +45,13 @@ def hydrate_index():
         index_name=index_name,  
         credential=credential,  
     ) as batch_client:  
-        # Add upload actions for all documents  
         batch_client.upload_documents(documents=documents)  
     print(f"Uploaded {len(documents)} documents in total")
 
 def main():
     load_dotenv()  
     createvectors(load_sample_data())
-    hydrate_index()
+#    hydrate_index()
 
 if __name__ == "__main__":
     main()
