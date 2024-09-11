@@ -5,7 +5,7 @@ import os
 import numpy as np
 from dotenv import load_dotenv
 import psycopg2
-
+from analyzeimage import analyze_image_llm, analyze_image_with_azure_vision
 
 load_dotenv()
 
@@ -26,17 +26,21 @@ def insert_vectors(url_vector_pairs, batch_size=100):
         # CREATE EXTENSION vector;
         # CREATE EXTENSION azure_storage;
         create_table_query = """
-        CREATE TABLE IF NOT EXISTS vectors (
+        CREATE TABLE IF NOT EXISTS imgcatalog (
             id SERIAL PRIMARY KEY,
             urllink TEXT,
-            vector vector(1024)
+            llmtext TEXT,
+            vatext TEXT,
+            imgvector vector(1024),
+            llmtextvector vector(1024),
+            vatextvector vector(1024)
         );
         """
         cursor.execute(create_table_query)
         conn.commit()
 
         # Insert the vectors into the table in batches
-        insert_query = "INSERT INTO vectors (urllink, vector) VALUES (%s, %s)"
+        insert_query = "INSERT INTO imgcatalog (urllink, llmtext,vatext,imgvector,llmtextvector,vatextvector) VALUES (%s, %s, %s, %s, %s, %s);"
         for i in range(0, len(url_vector_pairs), batch_size):
             batch = url_vector_pairs[i : i + batch_size]
             cursor.executemany(insert_query, batch)
@@ -106,7 +110,29 @@ sas_links = generate_sas_links(24)
 url_vector_pairs = []
 
 for sas_link in sas_links:
-    print(sas_link)
+#    print(sas_link)
+       
+    result = analyze_image_llm(sas_link)
+#    print(result["choices"][0]["message"]["content"])
+    llmtext = result["choices"][0]["message"]["content"]
+
+    result = analyze_image_with_azure_vision(sas_link)
+    text = ""
+    text += "Caption : \n"
+    if result.caption is not None:
+        text += result.caption.text + "\n"
+    text += "Dense Captions : \n"
+    if result.dense_captions is not None:
+        for caption in result.dense_captions.list:
+           text += caption.text + "\n"
+    text += "Read : \n"
+    if result.read is not None:
+        if len(result.read.blocks) > 0 and hasattr(result.read.blocks[0], 'lines'):
+            for line in result.read.blocks[0].lines:
+                text += line.text + "\n"
+#    print(text)
+    vatext = text
+   
     api_url = "https://eastus.api.cognitive.microsoft.com/computervision/retrieval:vectorizeImage?api-version=2024-02-01&model-version=2023-04-15"
     api_method = "POST"
     api_headers = {
@@ -124,20 +150,31 @@ for sas_link in sas_links:
         "Ocp-Apim-Subscription-Key": os.getenv("AZURE_AI_VISION_API_KEY"),
         "Content-Type": "application/json",
     }
-    data = {
-        "text": "Box Wrapped Compressor Kit. TRUPER 116 PSI product. An Air Compressor Package. Also has gravity feed air gun. LVMP The package includes 50 Litre lubricator, a 5 meter connector and a pressure hose"
+    llmdata = {
+        "text": llmtext    
     }
-    text_vector = vectorize(api_url, api_method, headers=api_headers, data=data)[
+    vadata = {
+        "text": vatext
+    }
+    llm_text_vector = vectorize(api_url, api_method, headers=api_headers, data=llmdata)[
         "vector"
     ]
-    print(img_vector)
-    print(text_vector)
+    va_text_vector = vectorize(api_url, api_method, headers=api_headers, data=vadata)[
+        "vector"
+    ]
+#    print(img_vector)
+#    print(llm_text_vector)
+#    print(va_text_vector)
     print(
         "Cosine similarity between image and text vectors: ",
-        cosine_similarity(img_vector, text_vector),
+        cosine_similarity(img_vector, va_text_vector),
+    )
+    print(
+        "Cosine similarity between image and LLM Text vectors: ",
+        cosine_similarity(img_vector, llm_text_vector),
     )
 
-    url_vector_pairs.append((sas_link, img_vector))
+    url_vector_pairs.append((sas_link,llmtext,vatext, img_vector, llm_text_vector, va_text_vector))
 
 
 insert_vectors(url_vector_pairs, batch_size=10)
