@@ -24,7 +24,7 @@ def fetch_similarimages(vector):
 
         # Execute the SELECT query to fetch image links
         input_vector_str = str(vector)
-        select_query = "SELECT urllink FROM vectors ORDER BY vector <=> %s LIMIT 2;"
+        select_query = "SELECT urllink FROM imgcatalog ORDER BY imgvector <=> %s LIMIT 2;"
         cursor.execute(select_query, (input_vector_str,)) 
         image_links = cursor.fetchall()
 

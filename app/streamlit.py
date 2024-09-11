@@ -14,6 +14,8 @@ def fetch_images_based_on_text():
         }
     data = {"text": st.session_state.text_input}
     text_vector = vectorize_txt(api_url, api_method, headers=api_headers, data=data)["vector"]
+#    print("\n")
+#    print(text_vector)
     image_links = txt_fetch_similarimages(text_vector)
     st.session_state.image_links = image_links
     st.session_state.images_fetched = True
@@ -42,7 +44,7 @@ if pages[selected_page] == "img":
         }
         
         img_vector = vectorize(api_url, api_method, headers=api_headers, data=bytes_data)["vector"]
-    
+#        print(img_vector)
         st.write("filename:", uploaded_file.name)
         #st.write("VectorData:", img_vector)
         # Fetch image links from the database
